@@ -42,6 +42,7 @@ See examples on a the dedicated repo: [grpcbin-example](https://github.com/moul/
 ```go
 package main
 
+
 import (
 	"fmt"
 	"log"
