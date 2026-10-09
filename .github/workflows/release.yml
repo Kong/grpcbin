@@ -4,44 +4,56 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
 jobs:
   release:
     name: releaser
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # create tag and GitHub release, upload GoReleaser assets
+      issues: write # @semantic-release/github comments on released issues
+      pull-requests: write # @semantic-release/github comments on released PRs
     steps:
       -
         name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
       -
-        name: Unshallow
-        run: git fetch --prune --unshallow
+        name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
       -
+        # replaces codfish/semantic-release-action (supply chain compromise, 2026-06-24)
         name: Run Semantic Release
         id: semantic
-        uses: docker://ghcr.io/codfish/semantic-release-action:v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          before="$(git tag --points-at HEAD | sort)"
+          npx --yes semantic-release@25.0.9
+          after="$(git tag --points-at HEAD | sort)"
+          if [ "$before" != "$after" ]; then
+            echo "new-release-published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "new-release-published=false" >> "$GITHUB_OUTPUT"
+          fi
       -
         name: Set up Go
         if: steps.semantic.outputs.new-release-published == 'true'
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: 1.18
-      -
-        name: Cache Go modules
-        if: steps.semantic.outputs.new-release-published == 'true'
-        uses: actions/cache@v2.1.7
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          go-version-file: go.mod
       -
         name: Run GoReleaser
         if: steps.semantic.outputs.new-release-published == 'true'
-        uses: goreleaser/goreleaser-action@v2.9.1
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
-          version: latest
-          args: release --rm-dist
+          version: v2.18.2
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

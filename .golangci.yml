@@ -1,28 +1,13 @@
-run:
-  deadline: 1m
-  tests: false
-  skip-files:
-    - "testing.go"
-    - ".*\\.pb\\.go"
-    - ".*\\.gen\\.go"
+version: "2"
 
-linters-settings:
-  golint:
-    min-confidence: 0
-  maligned:
-    suggest-new: true
-  goconst:
-    min-len: 5
-    min-occurrences: 4
-  misspell:
-    locale: US
+run:
+  timeout: 1m
+  tests: false
 
 linters:
-  disable-all: true
+  default: none
   enable:
     - bodyclose
-    - deadcode
-    - depguard
     - dogsled
     - dupl
     - errcheck
@@ -32,24 +17,55 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
-    - goimports
-    - golint
-    - gosimple
     - govet
     - ineffassign
-    - interfacer
-    - maligned
     - misspell
     - nakedret
     - prealloc
-    - scopelint
+    - revive
     - staticcheck
-    - structcheck
-    #- stylecheck
-    - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
     - whitespace
+  settings:
+    goconst:
+      min-len: 5
+      min-occurrences: 4
+    misspell:
+      locale: US
+    revive:
+      # replaces golint, which had no unused-parameter check
+      confidence: 0
+      enable-default-rules: true
+      rules:
+        - name: unused-parameter
+          disabled: true
+    staticcheck:
+      checks:
+        - all
+        # stylecheck was disabled in v1; it is now part of staticcheck
+        - -ST*
+        - -QF*
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - testing.go
+      - .*\.pb\.go
+      - .*\.gen\.go
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - testing.go
+      - .*\.pb\.go
+      - .*\.gen\.go

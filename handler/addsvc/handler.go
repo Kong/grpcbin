@@ -1,7 +1,7 @@
 package addsvchandler
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
 	pb "github.com/moul/pb/addsvc/go-grpc"
 

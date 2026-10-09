@@ -3,9 +3,8 @@
 package addservice
 
 import (
+	"context"
 	"errors"
-
-	"golang.org/x/net/context"
 )
 
 // Service describes a service that adds things together.
@@ -20,8 +19,8 @@ func New() Service {
 	var svc Service
 	{
 		svc = NewBasicService()
-		//svc = LoggingMiddleware(logger)(svc)
-		//svc = InstrumentingMiddleware(ints, chars)(svc)
+		// svc = LoggingMiddleware(logger)(svc)
+		// svc = InstrumentingMiddleware(ints, chars)(svc)
 	}
 	return svc
 }
