@@ -1,3 +1,5 @@
+version: 2
+
 env:
   - GO111MODULE=on
   - GOPROXY=https://proxy.golang.org
@@ -37,29 +39,18 @@ changelog:
     - Merge branch
 archives:
   -
-    name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-    replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      386: i386
-      amd64: x86_64
+    # keeps the v1 `replacements` naming: Darwin/Linux/Windows, i386, x86_64
+    name_template: >-
+      {{ .ProjectName }}_{{ title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
     format_overrides:
     -
       goos: windows
-      format: zip
+      formats: [zip]
     wrap_in_directory: true
-brews:
-  -
-    name: grpcbin
-#    github:
-#      owner: moul
-#      name: homebrew-moul
-    commit_author:
-      name: moul-bot
-      email: "bot@moul.io"
-    homepage: https://github.com/moul/grpcbin
-    description: "grpcbin"
 nfpms:
   -
     file_name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'

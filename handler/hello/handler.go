@@ -1,11 +1,10 @@
 package hellohandler
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
-
-	"golang.org/x/net/context"
 
 	pb "github.com/moul/pb/hello/go-grpc"
 )

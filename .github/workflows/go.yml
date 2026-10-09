@@ -10,6 +10,7 @@ on:
       - ".goreleaser.yml"
       - ".golangci.yml"
       - ".dockerignore"
+      - "Dockerfile"
       - "Makefile"
       - "rules.mk"
       - "go.*"
@@ -20,49 +21,57 @@ on:
       - ".goreleaser.yml"
       - ".golangci.yml"
       - ".dockerignore"
+      - "Dockerfile"
       - "Makefile"
       - "rules.mk"
       - "go.*"
       - ".github/workflows/go.yml"
 
+permissions:
+  contents: read
+
 jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Build the Docker image
         run: docker build . --file Dockerfile
   goreleaser:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: 1.18
-      - name: Cache Go modules
-        uses: actions/cache@v2.1.7
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          go-version-file: go.mod
       - name: Run GoReleaser (Dry Run)
-        uses: goreleaser/goreleaser-action@v2.9.1
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
-          version: latest
-          args: release --rm-dist --snapshot --skip-publish
+          version: v2.18.2
+          args: release --clean --snapshot --skip=publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   golangci-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          version: v1.28
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.14.0
           github-token: ${{ secrets.GITHUB_TOKEN }}
           args: --timeout=2m
           only-new-issues: false
@@ -74,11 +83,13 @@ jobs:
       matrix:
         golang:
           #- 1.13
-          - 1.18
+          - 1.26.9
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: ${{ matrix.golang }}
       - name: Run tests on Windows
@@ -90,22 +101,18 @@ jobs:
     strategy:
       matrix:
         golang:
-          - 1.18
+          - 1.26.9
     env:
       OS: macos-latest
       GOLANG: ${{ matrix.golang }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: ${{ matrix.golang }}
-      - uses: actions/cache@v2.1.7
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ matrix.golang }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-${{ matrix.golang }}-
       - name: Compile the project
         run: make go.install
       - name: Run tests on Unix-like operating systems
@@ -116,10 +123,10 @@ jobs:
           git --no-pager diff go.mod go.sum
           git --no-pager diff --quiet go.mod go.sum
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           #token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.txt
+          files: ./coverage.txt
           flags: unittests
           env_vars: OS,GOLANG
           name: codecov-umbrella
@@ -133,22 +140,18 @@ jobs:
           #- 1.11
           #- 1.12
           #- 1.13
-          - 1.18
+          - 1.26.9
     env:
       OS: ubuntu-latest
       GOLANG: ${{ matrix.golang }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: ${{ matrix.golang }}
-      - uses: actions/cache@v2.1.7
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ matrix.golang }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-${{ matrix.golang }}-
       - name: Compile the project
         run: make go.install CI=true
       - name: Check go.mod and go.sum
@@ -159,21 +162,11 @@ jobs:
       - name: Run tests on Unix-like operating systems
         run: make unittest CI=true
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           #token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.txt
+          files: ./coverage.txt
           flags: unittests
           env_vars: OS,GOLANG
           name: codecov-umbrella
           fail_ci_if_error: false
-      - name: Upload to Report.ci
-        if: always() && matrix.golang == 1.14
-        env:
-          REPORT_CI_TOKEN: ${{ secrets.REPORT_CI_TOKEN }}
-        run: |
-          ls -la go-install.log go-build.log go-test.json || true
-          # merge build logs
-          (cat go-install.log go-build.log > go-annotate.log) || true
-          curl -s https://report.ci/annotate.py | python - --input="go-annotate.log" --tool=go || true
-          curl -s https://report.ci/upload.py   | python - --include="go-test.json" --framework=go || true
