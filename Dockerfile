@@ -4,8 +4,7 @@ ARG             VCS_REF
 ARG             VERSION
 
 # build
-FROM            golang:1.26.9-alpine as builder
-RUN             apk add --no-cache git gcc musl-dev make
+FROM            golang:1.27.2-trixie as builder
 ENV             GO111MODULE=on
 WORKDIR         /go/src/moul.io/grpcbin
 COPY            go.* ./
@@ -15,7 +14,7 @@ COPY            . ./
 RUN             go build -o /go/bin/grpcbin -ldflags "-extldflags \"-static\"" -v
 
 # minimalist runtime
-FROM alpine:3.15.1
+FROM gcr.io/distroless/base-debian13
 LABEL           org.label-schema.build-date=$BUILD_DATE \
                 org.label-schema.name="grpcbin" \
                 org.label-schema.description="" \
@@ -27,7 +26,6 @@ LABEL           org.label-schema.build-date=$BUILD_DATE \
                 org.label-schema.schema-version="1.0" \
                 org.label-schema.cmd="docker run -i -t --rm moul/grpcbin" \
                 org.label-schema.help="docker exec -it $CONTAINER grpcbin --help"
-RUN             apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 COPY            --from=builder /go/bin/grpcbin /bin/grpcbin
 COPY            --from=builder /go/src/moul.io/grpcbin/cert /root/cert
 WORKDIR         /root
