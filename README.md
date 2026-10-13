@@ -30,8 +30,11 @@ Tags:
 * `YYYY.MM.DD` - build date; pin this in CI to upgrade deliberately
 * `sha-<short>` - source commit
 
-Every image must pass the contract smoke test and a Trivy scan (HIGH/CRITICAL, fixed vulnerabilities only) before
-it is pushed.
+Every image must pass the contract smoke test before it is pushed. Vulnerability scanning of the repository and the
+published images is done by [Aikido](https://app.aikido.dev).
+
+`cert/server.key` is an intentional, self-signed test key baked into the image for the TLS listener; it protects
+nothing and secret scanners can treat it as an accepted finding.
 
 ### Contract smoke test
 

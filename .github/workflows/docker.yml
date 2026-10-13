@@ -1,8 +1,9 @@
 name: Docker image
 
-# Builds, smoke tests, scans and publishes the grpcbin container image.
+# Builds, smoke tests and publishes the grpcbin container image.
+# Vulnerability scanning of the repository and published images is handled by Aikido.
 #
-# - pull_request: build + smoke test + scan only (no push)
+# - pull_request: build + smoke test only (no push)
 # - push to master: also publishes :latest, :YYYY.MM.DD and :sha-<short>
 # - monthly schedule: rebuilds to pick up base image and toolchain patches
 # - workflow_dispatch: manual rebuild/publish
@@ -93,14 +94,6 @@ jobs:
       - name: Dump container logs
         if: failure()
         run: docker logs grpcbin || true
-
-      - name: Scan image for vulnerabilities
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: ${{ env.TEST_IMAGE }}
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: "1"
 
       - name: Image metadata
         if: env.PUBLISH == 'true'
