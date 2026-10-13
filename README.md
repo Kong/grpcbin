@@ -9,6 +9,53 @@ httpbin like for gRPC
 
 ![overview](https://raw.githubusercontent.com/moul/grpcbin/master/.assets/overview.svg?sanitize=true)
 
+## Kong fork
+
+This is Kong's fork of [moul/grpcbin](https://github.com/moul/grpcbin) (unmaintained upstream). It is used as a
+gRPC upstream in Kong test suites only; it is not part of any Kong product.
+
+### Images
+
+Published by [`.github/workflows/docker.yml`](.github/workflows/docker.yml) on every merge to `master` and on a
+monthly schedule, for `linux/amd64` and `linux/arm64`:
+
+| Registry   | Image                  |
+|------------|------------------------|
+| Docker Hub | `kong/grpcbin`         |
+| GHCR       | `ghcr.io/kong/grpcbin` |
+
+Tags:
+
+* `latest` - most recent successful build
+* `YYYY.MM.DD` - build date; pin this in CI to upgrade deliberately
+* `sha-<short>` - source commit
+
+Every image must pass the contract smoke test and a Trivy scan (HIGH/CRITICAL, fixed vulnerabilities only) before
+it is pushed.
+
+### Contract smoke test
+
+[`scripts/smoke-test.sh`](scripts/smoke-test.sh) exercises the RPCs downstream consumers depend on, over both the
+plaintext (`9000`) and TLS (`9001`) listeners, using server reflection:
+
+```console
+$ docker run -d --name grpcbin -p 9000:9000 -p 9001:9001 kong/grpcbin:latest
+$ scripts/smoke-test.sh localhost 9000 9001
+```
+
+If you change behavior that a check covers, coordinate with the consumers below first.
+
+### Known consumers
+
+* `Kong/kong-ee` - busted integration tests (`spec/`, `plugins-ee/opa`) and `spec-ee/kong-api-tests`
+* KIC / team-k8s chainsaw tests
+* `Kong/gateway-docker-compose-generator`
+
+### Bundled TLS certificate
+
+`cert/server.crt` is a self-signed certificate (`CN=grpcb.in`). CI fails when it is within 90 days of expiry;
+regenerate it with `make gentls`.
+
 ## Links
 
 * Servers
