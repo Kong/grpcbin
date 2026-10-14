@@ -1,0 +1,142 @@
+name: Docker image
+
+# Builds, smoke tests and publishes the grpcbin container image.
+# Vulnerability scanning of the repository and published images is handled by Aikido.
+#
+# - pull_request: build + smoke test only (no push)
+# - push to master: also publishes :latest, :YYYY.MM.DD and :sha-<short>
+# - monthly schedule: rebuilds to pick up base image and toolchain patches
+# - workflow_dispatch: manual rebuild/publish
+#
+# Docker Hub publishing uses the Kong org secrets GHA_DOCKERHUB_PUSH_USER and
+# GHA_KONG_ORG_DOCKERHUB_PUSH_TOKEN (the latter must be shared with this repo).
+# GHCR publishing uses GITHUB_TOKEN.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOCKERHUB_IMAGE: kong/grpcbin
+  GHCR_IMAGE: ghcr.io/kong/grpcbin
+  GRPCURL_VERSION: 1.9.3
+  TEST_IMAGE: grpcbin:ci
+  PUBLISH: ${{ github.repository == 'Kong/grpcbin' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request' }}
+
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check bundled TLS certificate expiry
+        run: |
+          set -e
+          if ! openssl x509 -in cert/server.crt -noout -checkend $((90 * 24 * 3600)); then
+            echo "[FAILED] cert/server.crt expires within 90 days ($(openssl x509 -in cert/server.crt -noout -enddate)); regenerate it with 'make gentls'" >&2
+            exit 1
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build test image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: ${{ env.TEST_IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Install grpcurl
+        timeout-minutes: 5
+        run: |
+          set -e
+          base="https://github.com/fullstorydev/grpcurl/releases/download/v${GRPCURL_VERSION}"
+          tarball="grpcurl_${GRPCURL_VERSION}_linux_x86_64.tar.gz"
+          cd "$RUNNER_TEMP"
+          curl -sSfLO "$base/$tarball"
+          curl -sSfLO "$base/grpcurl_${GRPCURL_VERSION}_checksums.txt"
+          grep " $tarball\$" "grpcurl_${GRPCURL_VERSION}_checksums.txt" | sha256sum -c -
+          tar -xzf "$tarball" grpcurl
+          sudo install grpcurl /usr/local/bin/grpcurl
+
+      - name: Smoke test
+        timeout-minutes: 10
+        run: |
+          set -e
+          docker run -d --name grpcbin -p 9000:9000 -p 9001:9001 "$TEST_IMAGE"
+          scripts/smoke-test.sh localhost 9000 9001
+
+      - name: Dump container logs
+        if: failure()
+        run: docker logs grpcbin || true
+
+      - name: Image metadata
+        if: env.PUBLISH == 'true'
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: |
+            ${{ env.DOCKERHUB_IMAGE }}
+            ${{ env.GHCR_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value={{date 'YYYY.MM.DD'}}
+            type=sha,prefix=sha-
+          labels: |
+            org.opencontainers.image.title=grpcbin
+            org.opencontainers.image.vendor=Kong Inc.
+            org.opencontainers.image.description=gRPC request/response test service used by Kong test suites
+
+      - name: Log in to Docker Hub
+        if: env.PUBLISH == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ secrets.GHA_DOCKERHUB_PUSH_USER }}
+          password: ${{ secrets.GHA_KONG_ORG_DOCKERHUB_PUSH_TOKEN }}
+
+      - name: Log in to GHCR
+        if: env.PUBLISH == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push multi-arch image
+        if: env.PUBLISH == 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: true
+          sbom: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
