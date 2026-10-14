@@ -48,6 +48,11 @@ $ scripts/smoke-test.sh localhost 9000 9001
 
 If you change behavior that a check covers, coordinate with the consumers below first.
 
+### Ownership
+
+* `@Kong/team-security-engineering` - dependency and CVE bumps (Dependabot, Aikido findings)
+* `@Kong/gateway-sdets`, `@Kong/team-k8s` - the smoke test and reviewing runtime behavior changes
+
 ### Known consumers
 
 * `Kong/kong-ee` - busted integration tests (`spec/`, `plugins-ee/opa`) and `spec-ee/kong-api-tests`

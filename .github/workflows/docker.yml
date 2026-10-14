@@ -8,7 +8,8 @@ name: Docker image
 # - monthly schedule: rebuilds to pick up base image and toolchain patches
 # - workflow_dispatch: manual rebuild/publish
 #
-# Required secrets for publishing to Docker Hub: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN.
+# Docker Hub publishing uses the Kong org secrets GHA_DOCKERHUB_PUSH_USER and
+# GHA_KONG_ORG_DOCKERHUB_PUSH_TOKEN (the latter must be shared with this repo).
 # GHCR publishing uses GITHUB_TOKEN.
 
 on:
@@ -116,8 +117,8 @@ jobs:
         if: env.PUBLISH == 'true'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.GHA_DOCKERHUB_PUSH_USER }}
+          password: ${{ secrets.GHA_KONG_ORG_DOCKERHUB_PUSH_TOKEN }}
 
       - name: Log in to GHCR
         if: env.PUBLISH == 'true'
