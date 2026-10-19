@@ -16,13 +16,10 @@ gRPC upstream in Kong test suites only; it is not part of any Kong product.
 
 ### Images
 
-Published by [`.github/workflows/docker.yml`](.github/workflows/docker.yml) on every merge to `master` and on a
-monthly schedule, for `linux/amd64` and `linux/arm64`:
-
-| Registry   | Image                  |
-|------------|------------------------|
-| Docker Hub | `kong/grpcbin`         |
-| GHCR       | `ghcr.io/kong/grpcbin` |
+Published to Docker Hub as `kong/grpcbin` by [`.github/workflows/docker.yml`](.github/workflows/docker.yml) on every
+merge to `master` and on a monthly schedule, for `linux/amd64` and `linux/arm64`. Docker Hub is the source of truth;
+`ghcr.io/kong/kong_grpcbin` is a convenience mirror that syncs from it. Publishing uses a Docker Hub OIDC connection,
+so no registry credentials are stored in this repository.
 
 Tags:
 
