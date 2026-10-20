@@ -132,14 +132,29 @@ jobs:
             org.opencontainers.image.vendor=Kong Inc.
             org.opencontainers.image.description=gRPC request/response test service used by Kong test suites
 
+      # Build before logging in: the Docker Hub OIDC token is short-lived and the
+      # emulated arm64 build can take longer than its lifetime.
+      - name: Build multi-arch image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          provenance: true
+          sbom: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+
       - name: Docker login
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         env:
           DOCKERHUB_OIDC_CONNECTIONID: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
+          DOCKERHUB_OIDC_EXPIREIN: "900"
         with:
           username: kong
 
-      - name: Build and push multi-arch image
+      - name: Push multi-arch image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
