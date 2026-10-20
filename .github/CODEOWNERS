@@ -1,1 +1,4 @@
-* @moul
+# Security owns dependency/CVE bumps; SDET and team-k8s own the consumer contract.
+*                              @Kong/team-security-engineering @Kong/team-k8s
+/scripts/smoke-test.sh         @Kong/gateway-sdets @Kong/team-k8s @Kong/team-security-engineering
+/.github/workflows/docker.yml  @Kong/gateway-sdets @Kong/team-security-engineering

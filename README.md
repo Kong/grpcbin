@@ -9,6 +9,58 @@ httpbin like for gRPC
 
 ![overview](https://raw.githubusercontent.com/moul/grpcbin/master/.assets/overview.svg?sanitize=true)
 
+## Kong fork
+
+This is Kong's fork of [moul/grpcbin](https://github.com/moul/grpcbin) (unmaintained upstream). It is used as a
+gRPC upstream in Kong test suites only; it is not part of any Kong product.
+
+### Images
+
+Published to Docker Hub as `kong/grpcbin` by [`.github/workflows/docker.yml`](.github/workflows/docker.yml) on every
+merge to `master` and on a monthly schedule, for `linux/amd64` and `linux/arm64`. Docker Hub is the source of truth;
+`ghcr.io/kong/kong_grpcbin` is a convenience mirror that syncs from it. Publishing uses a Docker Hub OIDC connection,
+so no registry credentials are stored in this repository.
+
+Tags:
+
+* `latest` - most recent successful build
+* `YYYY.MM.DD` - build date; pin this in CI to upgrade deliberately
+* `sha-<short>` - source commit
+
+Every image must pass the contract smoke test before it is pushed. Vulnerability scanning of the repository and the
+published images is done by [Aikido](https://app.aikido.dev).
+
+`cert/server.key` is an intentional, self-signed test key baked into the image for the TLS listener; it protects
+nothing and secret scanners can treat it as an accepted finding.
+
+### Contract smoke test
+
+[`scripts/smoke-test.sh`](scripts/smoke-test.sh) exercises the RPCs downstream consumers depend on, over both the
+plaintext (`9000`) and TLS (`9001`) listeners, using server reflection:
+
+```console
+$ docker run -d --name grpcbin -p 9000:9000 -p 9001:9001 kong/grpcbin:latest
+$ scripts/smoke-test.sh localhost 9000 9001
+```
+
+If you change behavior that a check covers, coordinate with the consumers below first.
+
+### Ownership
+
+* `@Kong/team-security-engineering` - dependency and CVE bumps (Dependabot, Aikido findings)
+* `@Kong/gateway-sdets`, `@Kong/team-k8s` - the smoke test and reviewing runtime behavior changes
+
+### Known consumers
+
+* `Kong/kong-ee` - busted integration tests (`spec/`, `plugins-ee/opa`) and `spec-ee/kong-api-tests`
+* KIC / team-k8s chainsaw tests
+* `Kong/gateway-docker-compose-generator`
+
+### Bundled TLS certificate
+
+`cert/server.crt` is a self-signed certificate (`CN=grpcb.in`). CI fails when it is within 90 days of expiry;
+regenerate it with `make gentls`.
+
 ## Links
 
 * Servers
