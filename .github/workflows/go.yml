@@ -94,8 +94,7 @@ jobs:
     strategy:
       matrix:
         golang:
-          #- 1.13
-          - 1.26.9
+          - 1.26.10
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
@@ -117,7 +116,7 @@ jobs:
     strategy:
       matrix:
         golang:
-          - 1.26.9
+          - 1.26.10
     env:
       OS: macos-latest
       GOLANG: ${{ matrix.golang }}
@@ -157,10 +156,7 @@ jobs:
     strategy:
       matrix:
         golang:
-          #- 1.11
-          #- 1.12
-          #- 1.13
-          - 1.26.9
+          - 1.26.10
     env:
       OS: ubuntu-latest
       GOLANG: ${{ matrix.golang }}
