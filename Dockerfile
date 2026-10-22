@@ -4,8 +4,7 @@ ARG             VCS_REF
 ARG             VERSION
 
 # build
-FROM            golang:1.27.2-trixie as builder
-ENV             GO111MODULE=on
+FROM            golang:1.26.10-trixie AS builder
 WORKDIR         /go/src/moul.io/grpcbin
 COPY            go.* ./
 RUN             go mod download
@@ -14,7 +13,7 @@ COPY            . ./
 RUN             go build -o /go/bin/grpcbin -ldflags "-extldflags \"-static\"" -v
 
 # minimalist runtime
-FROM gcr.io/distroless/base-debian13
+FROM            gcr.io/distroless/base-debian13:latest
 LABEL           org.label-schema.build-date=$BUILD_DATE \
                 org.label-schema.name="grpcbin" \
                 org.label-schema.description="" \
